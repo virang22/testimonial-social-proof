@@ -83,14 +83,25 @@ See `server/.env.example`. Do not commit passwords, API keys, or database creden
 
 ## API Documentation
 
-- `POST /api/auth/signup` - Register a new user
-- `POST /api/auth/login` - Authenticate and receive JWT tokens
-- `POST /api/auth/refresh` - Rotate access tokens
-- `GET /api/spaces` - Fetch owner's spaces
-- `POST /api/spaces` - Create a new space
-- `POST /api/public/spaces/:slug/testimonials` - Submit a new review (multipart/form-data)
-- `GET /api/public/spaces/:slug/wall` - Fetch approved reviews for the Wall of Love
-- `PATCH /api/testimonials/:id/approve` - Approve a review
+See the full **[API.md](./API.md)** for:
+- All endpoint definitions (method, URL, body, response)
+- Authentication requirements (Bearer token / httpOnly cookie)
+- Public vs. protected routes
+- Token rotation flow diagram
+- Mongoose data model schemas
+
+## Authentication Flow
+
+```
+Signup → Email Verification Code (simulated, shown in console + dev response)
+       → POST /api/auth/verify-email
+       → Access Token (15 min) + Refresh Token (7 days, httpOnly cookie)
+       → On expiry: POST /api/auth/refresh → Refresh token rotated (old invalidated)
+       → Logout: refresh token cleared server-side
+```
+
+Forgot password sends a reset token (simulated) with a direct link in dev mode.
+
 
 ## Assumptions & Limitations
 - Images are stored locally on the server file system in the `uploads/` folder via Multer. For production, integration with an S3 bucket or Cloudinary is recommended.

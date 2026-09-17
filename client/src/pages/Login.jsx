@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import api, { setAccessToken } from '../services/api';
+import { CossButton, CossInput, CossForm, CossAlert, CossCard } from '../components/ui/CossUI';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail]     = useState('');
+  const [password, setPass]   = useState('');
+  const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [needsVerify, setNeedsVerify] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -15,11 +17,17 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', { email, password });
-      setAccessToken(response.data.accessToken);
+      const res = await api.post('/auth/login', { email, password });
+      setAccessToken(res.data.accessToken);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      const data = err.response?.data;
+      if (data?.needsVerification) {
+        setNeedsVerify(true);
+        setError('Please verify your email before logging in.');
+      } else {
+        setError(data?.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -27,56 +35,55 @@ export default function Login() {
 
   return (
     <div className="page-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
-      <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
-        <div className="text-center" style={{ marginBottom: '2rem' }}>
+      <CossCard style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
+
+        <div className="text-center" style={{ marginBottom: '1.75rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--primary-100)', color: 'var(--primary-600)', marginBottom: '1rem' }}>
-            <LogIn size={24} />
+            <LogIn size={22} />
           </div>
-          <h2 className="heading-md">Welcome back</h2>
-          <p className="text-muted" style={{ fontSize: '0.875rem' }}>Enter your credentials to access your account</p>
+          <h2 className="heading-md" style={{ marginBottom: '0.25rem' }}>Welcome back</h2>
+          <p className="text-muted" style={{ fontSize: '0.875rem' }}>Enter your credentials to continue</p>
         </div>
 
-        {error && <div style={{ padding: '0.75rem', backgroundColor: 'var(--danger-50)', color: 'var(--danger-600)', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
+        <CossAlert message={error} type={needsVerify ? 'info' : 'error'} />
 
-        <form onSubmit={handleSubmit}>
-          <div className="input-group">
-            <label className="input-label" htmlFor="email">Email</label>
-            <input 
-              id="email"
-              type="email" 
-              className="input-field" 
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+        {needsVerify && (
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <Link to="/signup" style={{ color: 'var(--primary-600)', fontSize: '0.875rem', fontWeight: '500' }}>
+              → Go to email verification
+            </Link>
           </div>
-          
-          <div className="input-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <label className="input-label" htmlFor="password">Password</label>
+        )}
+
+        <CossForm onSubmit={handleSubmit}>
+          <CossInput
+            id="email" label="Email" type="email" required
+            value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@example.com"
+          />
+
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+              <label htmlFor="password" style={{ fontSize: '0.875rem', fontWeight: '500', color: 'var(--text-700)' }}>Password</label>
               <Link to="/forgot-password" style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: '500' }}>Forgot password?</Link>
             </div>
-            <input 
-              id="password"
-              type="password" 
-              className="input-field" 
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+            <CossInput
+              id="password" type="password" required
+              value={password} onChange={(e) => setPass(e.target.value)}
+              placeholder="••••••••" style={{ marginBottom: 0 }}
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
+          <CossButton type="submit" fullWidth loading={loading} style={{ marginTop: '0.5rem' }}>
+            Sign in
+          </CossButton>
+        </CossForm>
 
         <div className="text-center" style={{ marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-500)' }}>
-          Don't have an account? <Link to="/signup" style={{ color: 'var(--primary-600)', fontWeight: '500' }}>Sign up</Link>
+          Don't have an account?{' '}
+          <Link to="/signup" style={{ color: 'var(--primary-600)', fontWeight: '500' }}>Sign up</Link>
         </div>
-      </div>
+      </CossCard>
     </div>
   );
 }
